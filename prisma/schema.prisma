@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Status {
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum Category {
+  COMPUTERS
+  PROJECTORS
+  FANS
+  LIGHTS
+  WIFI
+  OTHER
+}
+
+model Complaint {
+  id                String           @id @default(cuid())
+  ticketId          String           @unique
+  trackingTokenHash String
+  studentName       String
+  studentEmail      String
+  category          Category
+  title             String
+  description       String
+  building          String
+  roomNumber        String?
+  status            Status           @default(PENDING)
+  resolutionNote    String?
+  resolvedAt        DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  images            ComplaintImage[]
+  history           StatusHistory[]
+
+  @@index([status])
+  @@index([category])
+  @@index([createdAt])
+}
+
+model ComplaintImage {
+  id          String    @id @default(cuid())
+  complaintId String
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  storagePath String
+  mimeType    String
+  sizeBytes   Int
+  createdAt   DateTime  @default(now())
+
+  @@index([complaintId])
+}
+
+model StatusHistory {
+  id          String    @id @default(cuid())
+  complaintId String
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  fromStatus  Status?
+  toStatus    Status
+  note        String?
+  createdAt   DateTime  @default(now())
+
+  @@index([complaintId, createdAt])
+}
+
+model RateLimit {
+  key         String   @id
+  count       Int
+  windowStart DateTime
+}
